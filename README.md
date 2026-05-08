@@ -1,4 +1,4 @@
-# ECS Workshop Infrastructuree.
+# ECS Workshop Infrastructure
 
 A comprehensive AWS infrastructure setup for deploying a 2-tier microservice application using Amazon ECS (Elastic Container Service) with Fargate, Application Load Balancer, and supporting AWS services.
 
