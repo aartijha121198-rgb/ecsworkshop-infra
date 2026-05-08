@@ -1,1 +1,6 @@
 *.swp
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log

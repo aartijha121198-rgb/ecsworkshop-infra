@@ -1,7 +1,5 @@
-# Workflow: Deploys network and ECS stacks
-name: Deploy Infrastructure
+name: Deploy Terraform Infrastructure
 
-# Trigger: Runs when code is pushed to main branch
 on:
   push:
     branches:
@@ -9,38 +7,46 @@ on:
 
 jobs:
   deploy:
-    # Runner: GitHub-hosted Ubuntu environment
     runs-on: ubuntu-latest
+
     steps:
-      # Step: Check out repository code to access files
+
+      # Checkout repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step: Verify template files exist
-      - name: Check template files
-        run: |
-          ls -l templates/network-stack.cf.yml || echo "Error: Network template not found"
-          ls -l templates/ecs-stack.cf.yml || echo "Error: ECS template not found"
-          if [ ! -f templates/network-stack.cf.yml ] || [ ! -f templates/ecs-stack.cf.yml ]; then exit 1; fi
-
-      # Step: Configure AWS CLI with credentials from secrets
-      - name: Configure AWS credentials
+      # Configure AWS credentials
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} # AWS access key
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # AWS secret key
-          aws-region: us-east-1 # Set region to us-east-1
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
 
-      # Step: Check AWS CLI setup
-      - name: Verify AWS CLI
-        run: |
-          aws --version # Print AWS CLI version
-          aws sts get-caller-identity # Verify credentials work
+      # Install Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-      # Step: Deploy network stack
-      #- name: Deploy CloudFormation network stack
-      #  run: aws cloudformation deploy --template-file templates/network-stack.cf.yml --stack-name ecs-network-stack --region us-east-1
+      # Verify Terraform installation
+      - name: Verify Terraform
+        run: terraform version
 
-      # Step: Deploy ECS stack
-      - name: Deploy CloudFormation ECS stack
-        run: aws cloudformation deploy --template-file templates/ecs-stack.cf.yml --stack-name ecs-app-stack --capabilities CAPABILITY_IAM --region us-east-1 --parameter-overrides VpcId=$(aws cloudformation describe-stacks --stack-name ecs-network-stack --query "Stacks[0].Outputs[?OutputKey=='VpcId'].OutputValue" --output text) PublicSubnet1Id=$(aws cloudformation describe-stacks --stack-name ecs-network-stack --query "Stacks[0].Outputs[?OutputKey=='PublicSubnet1Id'].OutputValue" --output text) PublicSubnet2Id=$(aws cloudformation describe-stacks --stack-name ecs-network-stack --query "Stacks[0].Outputs[?OutputKey=='PublicSubnet2Id'].OutputValue" --output text) PrivateSubnet1Id=$(aws cloudformation describe-stacks --stack-name ecs-network-stack --query "Stacks[0].Outputs[?OutputKey=='PrivateSubnet1Id'].OutputValue" --output text) PrivateSubnet2Id=$(aws cloudformation describe-stacks --stack-name ecs-network-stack --query "Stacks[0].Outputs[?OutputKey=='PrivateSubnet2Id'].OutputValue" --output text)
+      # Go into terraform directory
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./templates/terraform
+
+      # Validate Terraform code
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ./templates/terraform
+
+      # Terraform Plan
+      - name: Terraform Plan
+        run: terraform plan
+        working-directory: ./templates/terraform
+
+      # Deploy Infrastructure
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: ./templates/terraform
