@@ -33,7 +33,7 @@ jobs:
 
       # Go into terraform directory
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -reconfigure
         working-directory: ./templates/terraform
 
       # Validate Terraform code
