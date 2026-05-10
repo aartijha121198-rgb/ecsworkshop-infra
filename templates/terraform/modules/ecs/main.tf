@@ -141,6 +141,69 @@ resource "aws_lb_listener" "frontend" {
   }
 }
 
+
+resource "aws_ecs_service" "frontend" {
+  name            = "frontend-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.frontend.arn
+  launch_type     = "FARGATE"
+
+  desired_count = 1
+
+  network_configuration {
+    subnets = [
+      var.public_subnet_1_id,
+      var.public_subnet_2_id
+    ]
+
+    security_groups = [aws_security_group.ecs_sg.id]
+
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.frontend.arn
+    container_name   = "frontend"
+    container_port   = 80
+  }
+
+  depends_on = [
+    aws_lb_listener.frontend
+  ]
+}
+
+
+resource "aws_ecs_service" "backend" {
+  name            = "backend-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.backend.arn
+  launch_type     = "FARGATE"
+
+  desired_count = 1
+
+  network_configuration {
+    subnets = [
+      var.public_subnet_1_id,
+      var.public_subnet_2_id
+    ]
+
+    security_groups = [aws_security_group.ecs_sg.id]
+
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.backend.arn
+    container_name   = "backend"
+    container_port   = 3000
+  }
+
+  depends_on = [
+    aws_lb_listener.frontend
+  ]
+}
+
+
 # ECS TASK DEFINITIONS
 
 resource "aws_ecs_task_definition" "frontend" {
@@ -168,6 +231,9 @@ resource "aws_ecs_task_definition" "frontend" {
     }
   ])
 }
+
+
+
 
 resource "aws_ecs_task_definition" "backend" {
   family                   = "backend-task"
