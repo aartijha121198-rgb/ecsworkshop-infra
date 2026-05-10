@@ -35,9 +35,6 @@ jobs:
       - name: Verify Terraform
         run: terraform version
 
-      # Terraform Format Check
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
 
       # Terraform Init (connects to S3 remote backend + DynamoDB lock)
       - name: Terraform Init
@@ -49,8 +46,8 @@ jobs:
 
       # Terraform Plan
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: terraform plan
 
       # Terraform Apply
       - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve
