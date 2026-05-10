@@ -6,47 +6,51 @@ on:
       - main
 
 jobs:
-  deploy:
+  terraform:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./templates/terraform
 
     steps:
 
-      # Checkout repository
-      - name: Checkout code
-        uses: actions/checkout@v3
+      # Checkout Repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      # Configure AWS credentials
+      # Configure AWS Credentials
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-west-2
+          aws-region: us-west-1
 
-      # Install Terraform
+      # Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # Verify Terraform installation
+      # Verify Terraform
       - name: Verify Terraform
         run: terraform version
 
-      # Go into terraform directory
-      - name: Terraform Init
-        run: terraform init -reconfigure
-        working-directory: ./templates/terraform
+      # Terraform Format Check
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
 
-      # Validate Terraform code
+      # Terraform Init (connects to S3 remote backend + DynamoDB lock)
+      - name: Terraform Init
+        run: terraform init
+
+      # Terraform Validate
       - name: Terraform Validate
         run: terraform validate
-        working-directory: ./templates/terraform
 
       # Terraform Plan
       - name: Terraform Plan
-        run: terraform plan
-        working-directory: ./templates/terraform
+        run: terraform plan -out=tfplan
 
-      # Deploy Infrastructure
+      # Terraform Apply
       - name: Terraform Apply
-        run: terraform apply -auto-approve
-        working-directory: ./templates/terraform
+        run: terraform apply -auto-approve tfplan
